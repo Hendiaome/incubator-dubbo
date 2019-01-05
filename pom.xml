@@ -54,6 +54,13 @@ limitations under the License.
     </modules>
     <profiles>
         <profile>
+            <id>learn</id>
+            <modules>
+                <module>dubbo-learn</module>
+            </modules>
+        </profile>
+
+       <!-- <profile>
             <id>test</id>
             <activation>
                 <file>
@@ -63,7 +70,7 @@ limitations under the License.
             <modules>
                 <module>dubbo-test</module>
             </modules>
-        </profile>
+        </profile>-->
         <profile>
             <id>hudson</id>
             <build>
@@ -366,16 +373,16 @@ limitations under the License.
                 <artifactId>resteasy-jaxb-provider</artifactId>
                 <version>${resteasy_version}</version>
             </dependency>
-            <dependency>
+           <!-- <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
                 <version>${tomcat_embed_version}</version>
-            </dependency>
-            <dependency>
+            </dependency>-->
+           <!-- <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-logging-juli</artifactId>
                 <version>${tomcat_embed_version}</version>
-            </dependency>
+            </dependency>-->
             <!-- Log libs -->
             <dependency>
                 <groupId>org.slf4j</groupId>
