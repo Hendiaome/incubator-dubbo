@@ -1,8 +1,7 @@
-package hendiaome.controller;
+package com.hendiaome.controller;
 
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.hendiaome.api.TestService;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

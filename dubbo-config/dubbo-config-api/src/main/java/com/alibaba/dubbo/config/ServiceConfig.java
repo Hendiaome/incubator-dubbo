@@ -192,6 +192,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return unexported;
     }
 
+    /**
+     * 暴露服务
+     */
     public synchronized void export() {
         if (provider != null) {
             if (export == null) {
@@ -216,6 +219,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 开始暴露
+     */
     protected synchronized void doExport() {
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
@@ -261,6 +267,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
+
+        // 泛华调用
         if (ref instanceof GenericService) {
             interfaceClass = GenericService.class;
             if (StringUtils.isEmpty(generic)) {
@@ -313,8 +321,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }
+
+        // step1: 暴露url信息(端口,协议,版本信息等)
         doExportUrls();
+
+        // step2: 记录method
         ProviderModel providerModel = new ProviderModel(getUniqueServiceName(), this, ref);
+
+        // step3: 记录provider
         ApplicationModel.initProviderModel(getUniqueServiceName(), providerModel);
     }
 
@@ -456,6 +470,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 map.put("token", token);
             }
         }
+
+        // 本地调用
         if ("injvm".equals(protocolConfig.getName())) {
             protocolConfig.setRegister(false);
             map.put("notify", "false");
@@ -479,33 +495,45 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         String scope = url.getParameter(Constants.SCOPE_KEY);
         // don't export when none is configured
         if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
-
             // export to local if the config is not remote (export to remote only when config is remote)
+            // 本地和远端都会暴露一份
+            // 不是远端则在本地暴露
             if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
                 exportLocal(url);
             }
+
             // export to remote if the config is not local (export to local only when config is local)
+            // 不是本地则在远端暴露
             if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
                 if (logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
                 if (registryURLs != null && registryURLs.size() > 0) {
                     for (URL registryURL : registryURLs) {
+                        // 遍历urlList暴露
+
                         url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
-                        URL monitorUrl = loadMonitor(registryURL);
+
+                        // 获取监控
+                        URL monitorUrl = super.loadMonitor(registryURL);
                         if (monitorUrl != null) {
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
+
                         if (logger.isInfoEnabled()) {
                             logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
                         }
+
+                        // 创建执行者
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
+                        // 暴露包裹的执行者(此处有filter 先暴露 registerProtocol)
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
                 } else {
+                    // 暴露特定协议
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
@@ -519,14 +547,22 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void exportLocal(URL url) {
+        // step1: 创建本地暴露 如果满足
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
             URL local = URL.valueOf(url.toFullString())
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(LOCALHOST)
                     .setPort(0);
+
+            // step2: threadLocal设置ref实例
             ServiceClassHolder.getInstance().pushServiceClass(getServiceClass(ref));
-            Exporter<?> exporter = protocol.export(
-                    proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
+
+            // step3: 创建执行者
+            Invoker invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, local);
+
+            // step4: 根据协议暴露
+            Exporter<?> exporter = protocol.export(invoker);
+
             exporters.add(exporter);
             logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry");
         }

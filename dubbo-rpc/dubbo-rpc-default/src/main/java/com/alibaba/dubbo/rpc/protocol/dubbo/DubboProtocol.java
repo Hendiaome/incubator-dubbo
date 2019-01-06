@@ -238,7 +238,10 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        // 打开服务
         openServer(url);
+
+        // 序列化
         optimizeSerialization(url);
         return exporter;
     }
@@ -251,6 +254,7 @@ public class DubboProtocol extends AbstractProtocol {
         if (isServer) {
             ExchangeServer server = serverMap.get(key);
             if (server == null) {
+                // 创建service
                 serverMap.put(key, createServer(url));
             } else {
                 // server supports reset, use together with override
@@ -262,7 +266,9 @@ public class DubboProtocol extends AbstractProtocol {
     private ExchangeServer createServer(URL url) {
         // send readonly event when server closes, it's enabled by default
         url = url.addParameterIfAbsent(Constants.CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString());
+
         // enable heartbeat by default
+        // 心跳
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
         String str = url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_SERVER);
 
@@ -271,11 +277,14 @@ public class DubboProtocol extends AbstractProtocol {
 
         url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
         ExchangeServer server;
+
         try {
+            // exchange transport 绑定
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
+
         str = url.getParameter(Constants.CLIENT_KEY);
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();
