@@ -338,8 +338,11 @@ public class DubboProtocol extends AbstractProtocol {
 
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         optimizeSerialization(url);
-        // create rpc invoker.
-        DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
+
+        // 创建, 初始化nettyClients
+        ExchangeClient[] clients = getClients(url);
+        // 创建代理
+        DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, clients, invokers);
         invokers.add(invoker);
         return invoker;
     }
