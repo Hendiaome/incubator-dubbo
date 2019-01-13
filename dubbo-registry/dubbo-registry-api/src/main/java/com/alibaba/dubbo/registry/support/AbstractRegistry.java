@@ -94,6 +94,8 @@ public abstract class AbstractRegistry implements Registry {
         }
         this.file = file;
         loadProperties();
+
+        // 服务注册通知所有consumer
         notify(url.getBackupUrls());
     }
 

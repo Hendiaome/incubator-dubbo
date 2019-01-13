@@ -133,7 +133,7 @@ public class RegistryProtocol implements Protocol {
         ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registedProviderUrl);
 
         if (register) {
-            // 注册
+            // 创建zkRegister(notify), 注册写zk节点
             register(registryUrl, registedProviderUrl);
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
         }
@@ -144,7 +144,9 @@ public class RegistryProtocol implements Protocol {
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
 
+        // 订阅消费者
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
+
         //Ensure that a new exporter instance is returned every time export
         return new Exporter<T>() {
             public Invoker<T> getInvoker() {
