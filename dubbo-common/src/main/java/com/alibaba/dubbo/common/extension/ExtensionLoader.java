@@ -306,6 +306,8 @@ public class ExtensionLoader<T> {
             synchronized (holder) {
                 instance = holder.get();
                 if (instance == null) {
+
+                    // 创建
                     instance = createExtension(name);
                     holder.set(instance);
                 }
@@ -440,6 +442,8 @@ public class ExtensionLoader<T> {
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
+
+                            // create
                             instance = createAdaptiveExtension();
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
@@ -483,17 +487,23 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
+        // 拿到类
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null) {
             throw findException(name);
         }
+
+        // 实例注入
         try {
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, (T) clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+
+            // ioc
             injectExtension(instance);
+
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
             if (wrapperClasses != null && wrapperClasses.size() > 0) {
                 for (Class<?> wrapperClass : wrapperClasses) {
@@ -516,9 +526,12 @@ public class ExtensionLoader<T> {
                             && Modifier.isPublic(method.getModifiers())) {
                         Class<?> pt = method.getParameterTypes()[0];
                         try {
+
+                            // 拿到属性
                             String property = method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
                             Object object = objectFactory.getExtension(pt, property);
                             if (object != null) {
+                                // 从工厂中找到属性注册
                                 method.invoke(instance, object);
                             }
                         } catch (Exception e) {
@@ -546,11 +559,14 @@ public class ExtensionLoader<T> {
     }
 
     private Map<String, Class<?>> getExtensionClasses() {
+        // 所有带SPI的接口集合 key:name vale:class
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
+
+                    // load
                     classes = loadExtensionClasses();
                     cachedClasses.set(classes);
                 }
@@ -705,14 +721,17 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
-            return injectExtension((T) getAdaptiveExtensionClass().newInstance());
+            Object o = getAdaptiveExtensionClass().newInstance();
+            return injectExtension((T) o);
         } catch (Exception e) {
             throw new IllegalStateException("Can not create adaptive extension " + type + ", cause: " + e.getMessage(), e);
         }
     }
 
     private Class<?> getAdaptiveExtensionClass() {
+        // 获取所有类
         getExtensionClasses();
+
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
@@ -720,8 +739,11 @@ public class ExtensionLoader<T> {
     }
 
     private Class<?> createAdaptiveExtensionClass() {
+        // 产生代码
         String code = createAdaptiveExtensionClassCode();
+
         ClassLoader classLoader = findClassLoader();
+        // 编译class
         com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
         return compiler.compile(code, classLoader);
     }
@@ -730,6 +752,7 @@ public class ExtensionLoader<T> {
         StringBuilder codeBuidler = new StringBuilder();
         Method[] methods = type.getMethods();
         boolean hasAdaptiveAnnotation = false;
+
         for (Method m : methods) {
             if (m.isAnnotationPresent(Adaptive.class)) {
                 hasAdaptiveAnnotation = true;
@@ -737,6 +760,7 @@ public class ExtensionLoader<T> {
             }
         }
         // no need to generate adaptive class since there's no adaptive method found.
+        //  要求该接口至少有一个方法被 Adaptive 注解修饰
         if (!hasAdaptiveAnnotation)
             throw new IllegalStateException("No adaptive method on extension " + type.getName() + ", refuse to create the adaptive class!");
 
