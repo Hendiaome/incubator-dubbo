@@ -133,7 +133,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         failedUnregistered.remove(url);
         try {
             // Sending a registration request to the server side
-            // FailbackRegistry写zk节点
+            // 写zk节点
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
